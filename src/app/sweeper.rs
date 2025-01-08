@@ -1,4 +1,4 @@
-use rand::seq::SliceRandom;
+use rand::seq::IteratorRandom;
 use std::{collections::VecDeque, time::Instant};
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -37,9 +37,11 @@ pub struct SweeperGame {
 impl SweeperGame {
     /// Initialize and start a new game.
     pub fn new(width: usize, height: usize, num_bombs: usize) -> Self {
-        let cells = vec![Cell::default(); width * height];
+        let mut cells = vec![Cell::default(); width * height];
         // Distribute bombs
-        cells.choose_multiple(&mut rand::thread_rng(), num_bombs);
+        for i in (0..width * height).choose_multiple(&mut rand::thread_rng(), num_bombs) {
+            cells[i].is_bomb = true;
+        }
 
         let board = Board {
             width,
@@ -126,8 +128,8 @@ impl SweeperGame {
     fn adjacent_unopened_cells(&self, cell_index: usize) -> Vec<usize> {
         let x = cell_index % self.board.width;
         let y = cell_index / self.board.width;
-        (-1..1)
-            .flat_map(|i| (-1..1).map(move |j| (i, j)))
+        (-1..=1)
+            .flat_map(|i| (-1..=1).map(move |j| (j, i)))
             .filter_map(|(i, j)| {
                 if (i == 0 && j == 0) {
                     None
@@ -146,10 +148,10 @@ mod tests {
 
     #[test]
     fn test_new_game() {
-        let game = SweeperGame::new(10, 10, 10);
+        let game = SweeperGame::new(10, 10, 20);
         assert_eq!(game.board.width, 10);
         assert_eq!(game.board.height, 10);
-        assert_eq!(game.num_bombs, 0);
+        assert_eq!(game.num_bombs, 20);
         assert_eq!(game.num_revealed, 0);
         assert_eq!(game.num_flags, 0);
         assert_eq!(game.state, GameState::Running);
@@ -157,7 +159,7 @@ mod tests {
 
         // Test sum of bombs
         let num_bombs = game.board.cells.iter().filter(|&cell| cell.is_bomb).count();
-        assert_eq!(num_bombs, 10);
+        assert_eq!(num_bombs, game.num_bombs);
     }
 
     #[test]
