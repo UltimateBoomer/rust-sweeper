@@ -79,8 +79,6 @@ impl App {
         }
     }
 
-    fn move_cursor(&mut self, x: usize, y: usize) {}
-
     /// Set running to false to quit the application.
     fn quit(&mut self) {
         self.is_running = false;

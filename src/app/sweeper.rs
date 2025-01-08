@@ -1,5 +1,5 @@
 use rand::seq::IteratorRandom;
-use std::{collections::VecDeque, time::Instant};
+use std::time::Instant;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Cell {
@@ -83,20 +83,35 @@ impl SweeperGame {
         self.state
     }
 
-    fn reveal_cell(&mut self, cell_index: usize) {
-        let cell_stack = vec![cell_index];
+    pub fn flag(&mut self, x: isize, y: isize) {
+        let cell_index = self.cell_index(x, y);
+        if let Some(cell_index) = cell_index {
+            let cell = &mut self.board.cells[cell_index];
+            if !cell.is_revealed {
+                cell.is_flagged = !cell.is_flagged;
+                if cell.is_flagged {
+                    self.num_flags += 1;
+                } else {
+                    self.num_flags -= 1;
+                }
+            }
+        }
+    }
 
-        while !cell_stack.is_empty() {
+    fn reveal_cell(&mut self, cell_index: usize) {
+        let mut cell_stack = vec![cell_index];
+
+        while let Some(cell_index) = cell_stack.pop() {
             {
                 let cell = &mut self.board.cells[cell_index];
-
                 cell.is_revealed = true;
-                self.num_revealed += 1;
+            }
 
-                if self.num_revealed == self.board.width * self.board.height - self.num_bombs {
-                    self.state = GameState::Win;
-                    return;
-                }
+            self.num_revealed += 1;
+
+            if self.num_revealed >= self.board.width * self.board.height - self.num_bombs {
+                self.state = GameState::Win;
+                break;
             }
 
             let adjacent = self.adjacent_unopened_cells(cell_index);
@@ -111,7 +126,7 @@ impl SweeperGame {
 
             if mine_count == 0 {
                 for &j in &adjacent {
-                    self.reveal_cell(j);
+                    cell_stack.push(j);
                 }
             }
         }
@@ -131,7 +146,7 @@ impl SweeperGame {
         (-1..=1)
             .flat_map(|i| (-1..=1).map(move |j| (j, i)))
             .filter_map(|(i, j)| {
-                if (i == 0 && j == 0) {
+                if i == 0 && j == 0 {
                     None
                 } else {
                     self.cell_index(x as isize + i, y as isize + j)
@@ -184,5 +199,28 @@ mod tests {
             game.adjacent_unopened_cells(11),
             vec![0, 1, 2, 10, 12, 20, 21, 22]
         );
+    }
+
+    #[test]
+    fn test_open_simple() {
+        let mut game = SweeperGame::new(10, 10, 0);
+
+        // Bombs
+        for i in [10, 11] {
+            game.board.cells[i].is_bomb = true;
+        }
+
+        assert_eq!(game.open(0, 0), GameState::Running);
+        assert_eq!(game.num_revealed, 1);
+        assert_eq!(game.board.cells[0].is_revealed, true);
+        assert_eq!(game.board.cells[0].mine_count, 2);
+    }
+
+    #[test]
+    fn test_open_bomb() {
+        let mut game = SweeperGame::new(10, 10, 0);
+        game.board.cells[0].is_bomb = true;
+
+        assert_eq!(game.open(0, 0), GameState::Lose);
     }
 }
