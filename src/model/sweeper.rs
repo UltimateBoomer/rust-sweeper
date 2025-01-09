@@ -1,5 +1,5 @@
 use rand::seq::IteratorRandom;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Cell {
@@ -89,8 +89,32 @@ impl SweeperGame {
         }
     }
 
+    pub fn get_width(&self) -> usize {
+        self.board.width
+    }
+
+    pub fn get_height(&self) -> usize {
+        self.board.height
+    }
+
     pub fn is_valid_coordinate(&self, x: isize, y: isize) -> bool {
         x >= 0 && x < self.board.width as isize && y >= 0 && y < self.board.height as isize
+    }
+
+    pub fn get_cell(&self, x: isize, y: isize) -> Option<&Cell> {
+        self.cell_index(x, y).map(|index| &self.board.cells[index])
+    }
+
+    /// Get an iterator over the board row slices along with their coordinates.
+    pub fn cell_row_iter(&self) -> impl Iterator<Item = &[Cell]> {
+        self.board.cells.chunks(self.board.width)
+    }
+
+    pub fn get_elapsed_time(&self) -> Duration {
+        match self.state {
+            GameState::Running => self.start_time.elapsed(),
+            _ => Duration::ZERO,
+        }
     }
 
     fn reveal_cell(&mut self, cell_index: usize) {
@@ -145,7 +169,10 @@ impl SweeperGame {
                     None
                 } else {
                     self.cell_index(x as isize + i, y as isize + j)
-                        .filter(|&index| !self.board.cells[index].is_revealed)
+                        .filter(|&index| {
+                            !self.board.cells[index].is_revealed
+                                && !self.board.cells[index].is_flagged
+                        })
                 }
             })
             .collect()

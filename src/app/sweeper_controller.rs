@@ -5,7 +5,7 @@ use crate::model::sweeper::SweeperGame;
 /// Controller with cursor position.
 #[derive(Debug)]
 pub struct SweeperController {
-    game: Option<SweeperGame>,
+    pub game: Option<SweeperGame>,
     pub cursor: (isize, isize),
 }
 
@@ -31,31 +31,37 @@ impl SweeperController {
 
     pub fn get_elapsed_time(&self) -> Duration {
         match self.game {
-            Some(ref game) => game.start_time.elapsed(),
+            Some(ref game) => game.get_elapsed_time(),
             None => Duration::ZERO,
         }
     }
 
-    pub fn open(&mut self, x: isize, y: isize) {
+    pub fn open(&mut self) {
+        let (x, y) = self.cursor;
         if let Some(ref mut game) = self.game {
             game.open(x, y);
         }
     }
 
-    pub fn flag(&mut self, x: isize, y: isize) {
+    pub fn flag(&mut self) {
+        let (x, y) = self.cursor;
         if let Some(ref mut game) = self.game {
             game.flag(x, y);
         }
     }
 
     pub fn move_cursor(&mut self, dx: isize, dy: isize) {
-        let (x, y) = self.cursor;
-        let x = x + dx;
-        let y = y + dy;
         if let Some(ref game) = self.game {
-            if game.is_valid_coordinate(x, y) {
-                self.cursor = (x, y);
-            }
+            let (x, y) = self.cursor;
+            let x = (x as isize + dx).clamp(0, game.get_width() as isize - 1);
+            let y = (y as isize + dy).clamp(0, game.get_height() as isize - 1);
+            self.cursor = (x, y);
+        }
+    }
+
+    pub fn resign(&mut self) {
+        if let Some(ref mut game) = self.game {
+            game.state = crate::model::sweeper::GameState::Lose;
         }
     }
 }

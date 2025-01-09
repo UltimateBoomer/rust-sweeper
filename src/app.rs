@@ -1,15 +1,12 @@
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use ratatui::{
-    style::Stylize,
-    text::Line,
-    widgets::{Block, Paragraph},
-    DefaultTerminal, Frame,
-};
+use ratatui::{style::Stylize, text::Line, widgets::Block, DefaultTerminal, Frame};
 use std::time::Duration;
 use sweeper_controller::SweeperController;
+use sweeper_view::draw_game;
 
 pub mod sweeper_controller;
+pub mod sweeper_view;
 
 #[derive(Debug)]
 pub struct App {
@@ -30,10 +27,11 @@ impl App {
     pub fn run(&mut self, mut terminal: DefaultTerminal) -> Result<()> {
         self.controller.start_game(10, 10, 10);
         self.is_running = true;
-        while self.is_running && self.controller.is_running() {
+        while self.is_running {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_crossterm_events()?;
         }
+
         self.is_running = false;
         Ok(())
     }
@@ -45,13 +43,20 @@ impl App {
     /// - <https://github.com/ratatui/ratatui/tree/master/examples>
     fn draw(&mut self, frame: &mut Frame) {
         let elapsed = self.controller.get_elapsed_time().as_secs();
+        let title = Line::from(vec![
+            "Rust Sweeper ".blue().bold(),
+            "🚩 | ".into(),
+            elapsed.to_string().into(),
+        ])
+        .centered();
 
-        let title = Line::from(vec!["Rust Sweeper ".blue().bold(), "🚩".into()]).centered();
-        let text = format!("Time: {elapsed}");
         frame.render_widget(
-            Paragraph::new(text)
-                .block(Block::bordered().title(title))
-                .centered(),
+            draw_game(
+                self.controller.game.as_ref().unwrap(),
+                self.controller.cursor,
+            )
+            .block(Block::bordered().title(title))
+            .centered(),
             frame.area(),
         )
     }
@@ -76,9 +81,28 @@ impl App {
     /// Handles the key events and updates the state of [`App`].
     fn on_key_event(&mut self, key: KeyEvent) {
         match (key.modifiers, key.code) {
-            (_, KeyCode::Esc | KeyCode::Char('q'))
-            | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit(),
-            (_, KeyCode::Left) => self.quit(),
+            (_, KeyCode::Esc | KeyCode::Char('q')) => {
+                if self.controller.is_running() {
+                    self.controller.resign();
+                } else {
+                    self.quit();
+                }
+            }
+            (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit(),
+            (_, KeyCode::Left) => self.controller.move_cursor(-1, 0),
+            (_, KeyCode::Right) => self.controller.move_cursor(1, 0),
+            (_, KeyCode::Up) => self.controller.move_cursor(0, -1),
+            (_, KeyCode::Down) => self.controller.move_cursor(0, 1),
+            (_, KeyCode::Char(' ')) => {
+                if self.controller.is_running() {
+                    self.controller.open();
+                }
+            }
+            (_, KeyCode::Char('f')) => {
+                if self.controller.is_running() {
+                    self.controller.flag();
+                }
+            }
             _ => {}
         }
     }
