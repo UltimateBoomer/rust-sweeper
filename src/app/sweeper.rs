@@ -223,4 +223,28 @@ mod tests {
 
         assert_eq!(game.open(0, 0), GameState::Lose);
     }
+
+    #[test]
+    fn test_open_multiple() {
+        let mut game = SweeperGame::new(10, 10, 0);
+
+        // Bombs
+        // 0 1 .
+        // 2 3 x
+        // x x .
+        for i in [20, 21, 12] {
+            game.board.cells[i].is_bomb = true;
+        }
+
+        assert_eq!(game.open(0, 0), GameState::Running);
+        assert_eq!(game.num_revealed, 4);
+        assert_eq!(game.board.cells[0].is_revealed, true);
+        assert_eq!(game.board.cells[0].mine_count, 0);
+        assert_eq!(game.board.cells[1].is_revealed, true);
+        assert_eq!(game.board.cells[1].mine_count, 1);
+        assert_eq!(game.board.cells[10].is_revealed, true);
+        assert_eq!(game.board.cells[10].mine_count, 2);
+        assert_eq!(game.board.cells[11].is_revealed, true);
+        assert_eq!(game.board.cells[11].mine_count, 3);
+    }
 }

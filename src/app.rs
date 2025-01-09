@@ -11,23 +11,27 @@ use sweeper::SweeperGame;
 
 mod sweeper;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct App {
+    game: SweeperGame,
     is_running: bool,
 }
 
 impl App {
     /// Construct a new instance of [`App`].
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            game: SweeperGame::new(10, 10, 10),
+            is_running: false,
+        }
     }
 
     /// Run the application's main loop.
-    pub fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        let game = SweeperGame::new(10, 10, 10);
+    pub fn run(&mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        self.game = SweeperGame::new(10, 10, 10);
         self.is_running = true;
-        while self.is_running && game.state == sweeper::GameState::Running {
-            terminal.draw(|frame| self.draw(frame, &game))?;
+        while self.is_running && self.game.state == sweeper::GameState::Running {
+            terminal.draw(|frame| self.draw(frame))?;
             self.handle_crossterm_events()?;
         }
         self.is_running = false;
@@ -39,8 +43,8 @@ impl App {
     /// This is where you add new widgets. See the following resources for more information:
     /// - <https://docs.rs/ratatui/latest/ratatui/widgets/index.html>
     /// - <https://github.com/ratatui/ratatui/tree/master/examples>
-    fn draw(&mut self, frame: &mut Frame, game: &SweeperGame) {
-        let elapsed = game.start_time.elapsed().as_secs();
+    fn draw(&mut self, frame: &mut Frame) {
+        let elapsed = self.game.start_time.elapsed().as_secs();
 
         let title = Line::from(vec!["Rust Sweeper ".blue().bold(), "🚩".into()]).centered();
         let text = format!("Time: {elapsed}");
