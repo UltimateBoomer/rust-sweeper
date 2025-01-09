@@ -7,13 +7,13 @@ use ratatui::{
     DefaultTerminal, Frame,
 };
 use std::time::Duration;
-use sweeper::SweeperGame;
+use sweeper_controller::SweeperController;
 
-mod sweeper;
+pub mod sweeper_controller;
 
 #[derive(Debug)]
 pub struct App {
-    game: SweeperGame,
+    controller: SweeperController,
     is_running: bool,
 }
 
@@ -21,16 +21,16 @@ impl App {
     /// Construct a new instance of [`App`].
     pub fn new() -> Self {
         Self {
-            game: SweeperGame::new(10, 10, 10),
+            controller: SweeperController::new(),
             is_running: false,
         }
     }
 
     /// Run the application's main loop.
     pub fn run(&mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        self.game = SweeperGame::new(10, 10, 10);
+        self.controller.start_game(10, 10, 10);
         self.is_running = true;
-        while self.is_running && self.game.state == sweeper::GameState::Running {
+        while self.is_running && self.controller.is_running() {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_crossterm_events()?;
         }
@@ -44,7 +44,7 @@ impl App {
     /// - <https://docs.rs/ratatui/latest/ratatui/widgets/index.html>
     /// - <https://github.com/ratatui/ratatui/tree/master/examples>
     fn draw(&mut self, frame: &mut Frame) {
-        let elapsed = self.game.start_time.elapsed().as_secs();
+        let elapsed = self.controller.get_elapsed_time().as_secs();
 
         let title = Line::from(vec!["Rust Sweeper ".blue().bold(), "🚩".into()]).centered();
         let text = format!("Time: {elapsed}");

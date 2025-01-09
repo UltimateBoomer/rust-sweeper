@@ -1,6 +1,7 @@
-pub use app::App;
+use app::App;
 
 pub mod app;
+pub mod model;
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;

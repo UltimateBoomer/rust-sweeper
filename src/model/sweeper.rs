@@ -3,17 +3,17 @@ use std::time::Instant;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Cell {
-    is_bomb: bool,
-    is_flagged: bool,
-    is_revealed: bool,
-    mine_count: u8,
+    pub is_bomb: bool,
+    pub is_flagged: bool,
+    pub is_revealed: bool,
+    pub mine_count: u8,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct Board {
-    width: usize,
-    height: usize,
-    cells: Vec<Cell>,
+    pub width: usize,
+    pub height: usize,
+    pub cells: Vec<Cell>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -31,7 +31,6 @@ pub struct SweeperGame {
     pub num_flags: usize,
     pub state: GameState,
     pub start_time: Instant,
-    pub cursor: (isize, isize),
 }
 
 impl SweeperGame {
@@ -56,15 +55,7 @@ impl SweeperGame {
             num_flags: 0,
             state: GameState::Running,
             start_time: Instant::now(),
-            cursor: (0, 0),
         }
-    }
-
-    /// Move the cursor by the given offset.
-    pub fn move_cursor(&mut self, x: isize, y: isize) {
-        let cx = (self.cursor.0 + x).clamp(0, (self.board.width - 1) as isize);
-        let cy = (self.cursor.1 + y).clamp(0, (self.board.height - 1) as isize);
-        self.cursor = (cx, cy);
     }
 
     /// Unveil the cell at the given coordinate.
@@ -96,6 +87,10 @@ impl SweeperGame {
                 }
             }
         }
+    }
+
+    pub fn is_valid_coordinate(&self, x: isize, y: isize) -> bool {
+        x >= 0 && x < self.board.width as isize && y >= 0 && y < self.board.height as isize
     }
 
     fn reveal_cell(&mut self, cell_index: usize) {
@@ -133,10 +128,10 @@ impl SweeperGame {
     }
 
     fn cell_index(&self, x: isize, y: isize) -> Option<usize> {
-        if x >= self.board.width as isize || y >= self.board.height as isize || x < 0 || y < 0 {
-            None
-        } else {
+        if self.is_valid_coordinate(x, y) {
             Some(y as usize * self.board.width + x as usize)
+        } else {
+            None
         }
     }
 
@@ -170,7 +165,6 @@ mod tests {
         assert_eq!(game.num_revealed, 0);
         assert_eq!(game.num_flags, 0);
         assert_eq!(game.state, GameState::Running);
-        assert_eq!(game.cursor, (0, 0));
 
         // Test sum of bombs
         let num_bombs = game.board.cells.iter().filter(|&cell| cell.is_bomb).count();
