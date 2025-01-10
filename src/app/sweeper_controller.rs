@@ -40,7 +40,12 @@ impl SweeperController {
 
     pub fn open(&mut self) {
         let (x, y) = self.cursor;
+
         if let Some(ref mut game) = self.game {
+            if game.state == GameState::NotRunning {
+                game.generate_board(x, y);
+                game.start();
+            }
             game.open(x, y);
         }
     }

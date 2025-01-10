@@ -41,11 +41,7 @@ pub struct SweeperGame {
 impl SweeperGame {
     /// Initialize and start a new game.
     pub fn new(width: usize, height: usize, num_bombs: usize) -> Self {
-        let mut cells = vec![Cell::default(); width * height];
-        // Distribute bombs
-        for i in (0..width * height).choose_multiple(&mut rand::thread_rng(), num_bombs) {
-            cells[i].is_bomb = true;
-        }
+        let cells = vec![Cell::default(); width * height];
 
         let board = Board {
             width,
@@ -64,13 +60,21 @@ impl SweeperGame {
         }
     }
 
+    /// Generate board with bombs, excluding the given cell.
+    pub fn generate_board(&mut self, x: isize, y: isize) {
+        let mut rng = rand::thread_rng();
+        let bomb_indices = (0..self.board.cells.len())
+            .filter(|&i| i != self.cell_index(x, y).unwrap())
+            .choose_multiple(&mut rng, self.num_bombs);
+
+        for i in bomb_indices {
+            self.board.cells[i].is_bomb = true;
+        }
+    }
+
     /// Unveil the cell at the given coordinate.
     pub fn open(&mut self, x: isize, y: isize) -> GameState {
         if let Some(cell_index) = self.cell_index(x, y) {
-            if self.state == GameState::NotRunning {
-                self.first_reveal(cell_index);
-            }
-
             let cell = &self.board.cells[cell_index];
             if cell.is_revealed {
                 // Reveal surrounding cells if the number of flags around the cell is equal to the bomb count
@@ -138,13 +142,15 @@ impl SweeperGame {
         }
     }
 
-    fn first_reveal(&mut self, cell_index: usize) {
+    pub fn start(&mut self) {
         self.state = GameState::Running;
         self.start_time = Some(Instant::now());
     }
 
     fn end_game(&mut self) {
-        self.total_time = self.start_time.unwrap().elapsed();
+        if let Some(start_time) = self.start_time {
+            self.total_time = start_time.elapsed();
+        }
     }
 
     fn reveal_cell(&mut self, cell_index: usize) {
@@ -238,13 +244,16 @@ mod tests {
 
     #[test]
     fn test_new_game() {
-        let game = SweeperGame::new(10, 10, 20);
+        let mut game = SweeperGame::new(10, 10, 20);
+        game.generate_board(0, 0);
+        assert_eq!(game.state, GameState::NotRunning);
+        game.start();
         assert_eq!(game.board.width, 10);
         assert_eq!(game.board.height, 10);
         assert_eq!(game.num_bombs, 20);
         assert_eq!(game.num_revealed, 0);
         assert_eq!(game.num_flags, 0);
-        assert_eq!(game.state, GameState::NotRunning);
+        assert_eq!(game.state, GameState::Running);
 
         // Test sum of bombs
         let num_bombs = game.board.cells.iter().filter(|&cell| cell.is_bomb).count();
@@ -281,6 +290,7 @@ mod tests {
             game.board.cells[i].is_bomb = true;
             game.num_bombs += 1;
         }
+        game.start();
 
         assert_eq!(game.open(0, 0), GameState::Running);
         assert_eq!(game.num_revealed, 1);
@@ -292,6 +302,7 @@ mod tests {
     fn test_open_bomb() {
         let mut game = SweeperGame::new(10, 10, 0);
         game.board.cells[0].is_bomb = true;
+        game.start();
 
         assert_eq!(game.open(0, 0), GameState::Lose);
     }
@@ -308,6 +319,7 @@ mod tests {
             game.board.cells[i].is_bomb = true;
             game.num_bombs += 1;
         }
+        game.start();
 
         assert_eq!(game.open(0, 0), GameState::Running);
         assert_eq!(game.num_revealed, 4);
@@ -333,6 +345,7 @@ mod tests {
             game.board.cells[i].is_bomb = true;
             game.num_bombs += 1;
         }
+        game.start();
 
         assert_eq!(game.open(0, 0), GameState::Running);
         game.flag(1, 0);
@@ -354,6 +367,7 @@ mod tests {
         // 0 0 0
         game.board.cells[0].is_bomb = true;
         game.num_bombs = 1;
+        game.start();
 
         assert_eq!(game.open(2, 2), GameState::Win);
     }
