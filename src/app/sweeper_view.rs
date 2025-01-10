@@ -24,9 +24,15 @@ const FLAG_TEXT: &str = "🚩";
 const EMPTY_TEXT: &str = "　";
 
 pub fn draw_game(game: &SweeperGame, cursor: (isize, isize)) -> Paragraph {
-    let text = Text::from_iter(game.cell_row_iter().enumerate().map(|(y, row)| {
+    let time_text = format!("Time: {}", game.get_elapsed_time().as_secs());
+    let time_line = Line::from(time_text.bold().fg(Color::White));
+
+    let bomb_count_text = format!("Remaining: {}", game.num_bombs - game.num_flags);
+    let bomb_count_line = Line::from(bomb_count_text.bold().fg(Color::White));
+
+    let board_text = Text::from_iter(game.cell_row_iter().enumerate().map(|(y, row)| {
         Line::from_iter(row.iter().enumerate().map(|(x, cell)| {
-            let text = if game.state == GameState::Lose && !cell.is_revealed && cell.is_bomb {
+            let text = if game.state == GameState::Lose && cell.is_bomb {
                 BOMB_TEXT.into()
             } else if cell.is_revealed {
                 NUM_TEXTS[cell.mine_count as usize]
@@ -47,5 +53,11 @@ pub fn draw_game(game: &SweeperGame, cursor: (isize, isize)) -> Paragraph {
             }
         }))
     }));
+
+    let mut text = Text::default();
+    text.lines.push(time_line);
+    text.lines.push(bomb_count_line);
+    text.lines.extend(board_text.lines);
+
     Paragraph::new(text)
 }
