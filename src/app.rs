@@ -42,13 +42,7 @@ impl App {
     /// - <https://docs.rs/ratatui/latest/ratatui/widgets/index.html>
     /// - <https://github.com/ratatui/ratatui/tree/master/examples>
     fn draw(&mut self, frame: &mut Frame) {
-        let elapsed = self.controller.get_elapsed_time().as_secs();
-        let title = Line::from(vec![
-            "Rust Sweeper ".blue().bold(),
-            "🚩 | ".into(),
-            elapsed.to_string().into(),
-        ])
-        .centered();
+        let title = Line::from("Rust Sweeper ".blue().bold()).centered();
 
         frame.render_widget(
             draw_game(

@@ -27,8 +27,14 @@ pub fn draw_game(game: &SweeperGame, cursor: (isize, isize)) -> Paragraph {
     let time_text = format!("Time: {}", game.get_elapsed_time().as_secs());
     let time_line = Line::from(time_text.bold().fg(Color::White));
 
-    let bomb_count_text = format!("Remaining: {}", game.num_bombs - game.num_flags);
-    let bomb_count_line = Line::from(bomb_count_text.bold().fg(Color::White));
+    let bomb_count_line = if game.state == GameState::Win {
+        Line::from("You Win!".bold().fg(Color::Green))
+    } else if game.state == GameState::Lose {
+        Line::from("You Lose!".bold().fg(Color::Red))
+    } else {
+        let bomb_count_text = format!("Remaining: {}", game.num_bombs - game.num_flags);
+        Line::from(bomb_count_text.bold().fg(Color::White))
+    };
 
     let board_text = Text::from_iter(game.cell_row_iter().enumerate().map(|(y, row)| {
         Line::from_iter(row.iter().enumerate().map(|(x, cell)| {
@@ -44,7 +50,9 @@ pub fn draw_game(game: &SweeperGame, cursor: (isize, isize)) -> Paragraph {
                 EMPTY_TEXT.into()
             };
 
-            if game.state == GameState::Running && (x as isize, y as isize) == cursor {
+            if (game.state == GameState::NotRunning || game.state == GameState::Running)
+                && (x as isize, y as isize) == cursor
+            {
                 text.on_black()
             } else if cell.is_revealed {
                 text.on_dark_gray()

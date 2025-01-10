@@ -21,6 +21,7 @@ pub struct Board {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GameState {
+    NotRunning,
     Running,
     Win,
     Lose,
@@ -33,7 +34,8 @@ pub struct SweeperGame {
     pub num_revealed: usize,
     pub num_flags: usize,
     pub state: GameState,
-    pub start_time: Instant,
+    pub start_time: Option<Instant>,
+    pub total_time: Duration,
 }
 
 impl SweeperGame {
@@ -56,14 +58,19 @@ impl SweeperGame {
             num_bombs,
             num_revealed: 0,
             num_flags: 0,
-            state: GameState::Running,
-            start_time: Instant::now(),
+            state: GameState::NotRunning,
+            start_time: None,
+            total_time: Duration::ZERO,
         }
     }
 
     /// Unveil the cell at the given coordinate.
     pub fn open(&mut self, x: isize, y: isize) -> GameState {
         if let Some(cell_index) = self.cell_index(x, y) {
+            if self.state == GameState::NotRunning {
+                self.first_reveal(cell_index);
+            }
+
             let cell = &self.board.cells[cell_index];
             if cell.is_revealed {
                 // Reveal surrounding cells if the number of flags around the cell is equal to the bomb count
@@ -72,6 +79,15 @@ impl SweeperGame {
                 self.reveal_cell(cell_index);
             }
         }
+
+        if self.num_revealed >= self.board.width * self.board.height - self.num_bombs {
+            self.state = GameState::Win;
+        }
+
+        if self.state != GameState::Running {
+            self.end_game();
+        }
+
         self.state
     }
 
@@ -113,9 +129,22 @@ impl SweeperGame {
 
     pub fn get_elapsed_time(&self) -> Duration {
         match self.state {
-            GameState::Running => self.start_time.elapsed(),
+            GameState::Running => match self.start_time {
+                Some(start_time) => start_time.elapsed(),
+                None => Duration::ZERO,
+            },
+            GameState::Win | GameState::Lose => self.total_time,
             _ => Duration::ZERO,
         }
+    }
+
+    fn first_reveal(&mut self, cell_index: usize) {
+        self.state = GameState::Running;
+        self.start_time = Some(Instant::now());
+    }
+
+    fn end_game(&mut self) {
+        self.total_time = self.start_time.unwrap().elapsed();
     }
 
     fn reveal_cell(&mut self, cell_index: usize) {
@@ -215,7 +244,7 @@ mod tests {
         assert_eq!(game.num_bombs, 20);
         assert_eq!(game.num_revealed, 0);
         assert_eq!(game.num_flags, 0);
-        assert_eq!(game.state, GameState::Running);
+        assert_eq!(game.state, GameState::NotRunning);
 
         // Test sum of bombs
         let num_bombs = game.board.cells.iter().filter(|&cell| cell.is_bomb).count();
@@ -313,5 +342,19 @@ mod tests {
         assert_eq!(game.board.cells[0].is_revealed, true);
         assert_eq!(game.board.cells[1].is_revealed, false);
         assert_eq!(game.board.cells[10].is_revealed, true);
+    }
+
+    #[test]
+    fn test_open_win() {
+        let mut game = SweeperGame::new(10, 10, 0);
+
+        // Layout
+        // x 1 0
+        // 1 1 0
+        // 0 0 0
+        game.board.cells[0].is_bomb = true;
+        game.num_bombs = 1;
+
+        assert_eq!(game.open(2, 2), GameState::Win);
     }
 }

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::model::sweeper::SweeperGame;
+use crate::model::sweeper::{GameState, SweeperGame};
 
 /// Controller with cursor position.
 #[derive(Debug)]
@@ -24,7 +24,9 @@ impl SweeperController {
 
     pub fn is_running(&self) -> bool {
         match self.game {
-            Some(ref game) => game.state == crate::model::sweeper::GameState::Running,
+            Some(ref game) => {
+                game.state == GameState::NotRunning || game.state == GameState::Running
+            }
             None => false,
         }
     }
