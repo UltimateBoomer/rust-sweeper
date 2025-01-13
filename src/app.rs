@@ -157,13 +157,6 @@ impl App {
     /// Handles the key events and updates the state of [`App`].
     fn on_key_event(&mut self, key: KeyEvent) {
         match (key.modifiers, key.code) {
-            (_, KeyCode::Esc | KeyCode::Char('q')) => {
-                if self.controller.is_running() {
-                    self.controller.resign();
-                } else {
-                    self.quit();
-                }
-            }
             (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit(),
             (_, KeyCode::Char('n')) => self.start_game(),
             _ => match self.state {
@@ -175,14 +168,24 @@ impl App {
     }
 
     fn on_menu_key_event(&mut self, key: KeyEvent) {
-        match key.code {
-            KeyCode::Char('d') => self.difficulty = self.difficulty.next(),
+        match (key.modifiers, key.code) {
+            (_, KeyCode::Esc | KeyCode::Char('q')) => {
+                self.quit();
+            }
+            (_, KeyCode::Char('d')) => self.difficulty = self.difficulty.next(),
             _ => {}
         }
     }
 
     fn on_game_key_event(&mut self, key: KeyEvent) {
         match (key.modifiers, key.code) {
+            (_, KeyCode::Esc | KeyCode::Char('q')) => {
+                if self.controller.is_running() {
+                    self.controller.resign();
+                } else {
+                    self.state = AppState::Menu;
+                }
+            }
             (_, KeyCode::Left) => self.controller.move_cursor(-1, 0),
             (_, KeyCode::Right) => self.controller.move_cursor(1, 0),
             (_, KeyCode::Up) => self.controller.move_cursor(0, -1),
