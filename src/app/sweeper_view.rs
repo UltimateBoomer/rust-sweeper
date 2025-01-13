@@ -6,8 +6,8 @@ use ratatui::{
 
 use crate::model::sweeper::{GameState, SweeperGame};
 
-const NUM_TEXTS: [&str; 10] = ["　", "１", "２", "３", "４", "５", "６", "７", "８", "９"];
-const NUM_COLORS: [&Color; 10] = [
+const NUM_TEXTS: [&str; 9] = ["　", "１", "２", "３", "４", "５", "６", "７", "８"];
+const NUM_COLORS: [&Color; 9] = [
     &Color::Black,
     &Color::Blue,
     &Color::Green,
@@ -17,7 +17,6 @@ const NUM_COLORS: [&Color; 10] = [
     &Color::Yellow,
     &Color::White,
     &Color::Gray,
-    &Color::DarkGray,
 ];
 const BOMB_TEXT: &str = "💣";
 const FLAG_TEXT: &str = "🚩";
