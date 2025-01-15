@@ -26,6 +26,9 @@ pub fn draw_game(game: &SweeperGame, cursor: (isize, isize)) -> Paragraph {
     let time_text = format!("Time: {}", game.get_elapsed_time().as_secs());
     let time_line = Line::from(time_text.bold().fg(Color::White));
 
+    let mine_count_text = format!("Mines: {}", game.num_bombs);
+    let mine_count_line = Line::from(mine_count_text.bold().fg(Color::White));
+
     let bomb_count_line = if game.state == GameState::Win {
         Line::from("You Win!".bold().fg(Color::Green))
     } else if game.state == GameState::Lose {
@@ -63,6 +66,7 @@ pub fn draw_game(game: &SweeperGame, cursor: (isize, isize)) -> Paragraph {
 
     let mut text = Text::default();
     text.lines.push(time_line);
+    text.lines.push(mine_count_line);
     text.lines.push(bomb_count_line);
     text.lines.extend(board_text.lines);
 
